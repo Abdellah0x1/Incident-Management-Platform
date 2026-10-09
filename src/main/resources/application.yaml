@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: Backend
+  datasource:
+    password : @{POSTGRES_USER:postgres}
+    username: @{POSTGRES_PASSWORD:@@abdo@@}
+    url: jdbc:postgresql://postgres:5432/incident_platform
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    org:
+      springframework: DEBUG
+      hibernate: DEBUG
+
