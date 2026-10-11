@@ -2,9 +2,9 @@ spring:
   application:
     name: Backend
   datasource:
-    password : @{POSTGRES_USER:postgres}
-    username: @{POSTGRES_PASSWORD:@@abdo@@}
-    url: jdbc:postgresql://postgres:5432/incident_platform
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:@@abdo@@}
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:incidents_platform}
   jpa:
     properties:
       hibernate:
@@ -17,4 +17,18 @@ logging:
     org:
       springframework: DEBUG
       hibernate: DEBUG
+
+cors:
+  allowed-origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION_MS}
+  cookieName: "jwtCookie"
+  cookieSecure: ${JWT_COOKIE_SECURE:false}
+
+
 
