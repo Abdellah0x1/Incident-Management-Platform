@@ -1,12 +1,16 @@
 package com.incidentplatform.audit.dto;
 
-
 import java.time.LocalDateTime;
 
 public record ActivityLogDTO(
-        String id,
-        String actorId,
-        String incidentId,
+        Long id,
+        String action,
+        String entityType,
+        Long entityId,
+        String oldValue,
+        String newValue,
+        Long actorId,
+        String actorUsername,
         LocalDateTime timestamp
-){
+) {
 }

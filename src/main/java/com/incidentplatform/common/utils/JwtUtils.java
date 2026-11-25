@@ -29,7 +29,7 @@ public class JwtUtils {
     private String jwtCookieName;
 
     @Value("${jwt.expiration}")
-    private int jwtExpiration;
+    private long jwtExpiration;
 
     @Value("${jwt.cookieSecure}")
     private boolean jwtCookieSecure;

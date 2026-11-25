@@ -11,24 +11,22 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
+    open-in-view: false
 
 logging:
   level:
-    org:
-      springframework: DEBUG
-      hibernate: DEBUG
+    root: INFO
+    com.incidentplatform: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
 
 cors:
   allowed-origins:
     - "http://localhost:3000"
     - "http://localhost:5173"
 
-
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION_MS}
   cookieName: "jwtCookie"
   cookieSecure: ${JWT_COOKIE_SECURE:false}
-
-
-

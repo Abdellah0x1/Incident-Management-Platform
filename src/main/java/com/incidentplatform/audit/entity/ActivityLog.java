@@ -1,19 +1,23 @@
 package com.incidentplatform.audit.entity;
 
 import com.incidentplatform.identity.entity.User;
-import com.incidentplatform.incident.entity.Incident;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "activity_logs")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"actor"})
 public class ActivityLog {
 
     @Id
@@ -21,19 +25,42 @@ public class ActivityLog {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "actor_id")
     private User actor;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Incident incident;
+    @Column(nullable = false)
+    private String action;
+
+    @Column(nullable = false)
+    private String entityType;
+
+    @Column(nullable = false)
+    private Long entityId;
+
+    @Column(columnDefinition = "TEXT")
+    private String oldValue;
+
+    @Column(columnDefinition = "TEXT")
+    private String newValue;
 
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-
     @PrePersist
-    public void prePersist(){
+    public void prePersist() {
         this.timestamp = LocalDateTime.now();
     }
 
-    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActivityLog that = (ActivityLog) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }
