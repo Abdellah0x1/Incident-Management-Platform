@@ -11,10 +11,16 @@ import com.incidentplatform.incident.dto.response.IncidentResponse;
 import com.incidentplatform.incident.dto.response.IncidentSummaryResponse;
 import com.incidentplatform.incident.entity.Incident;
 import com.incidentplatform.incident.entity.IncidentStatus;
+import com.incidentplatform.incident.event.IncidentAssignedEvent;
+import com.incidentplatform.incident.event.IncidentCreatedEvent;
+import com.incidentplatform.incident.event.IncidentDeletedEvent;
+import com.incidentplatform.incident.event.IncidentStatusChangedEvent;
+import com.incidentplatform.incident.event.IncidentUpdatedEvent;
 import com.incidentplatform.incident.mapper.IncidentMapper;
 import com.incidentplatform.incident.repository.IncidentRepository;
 import com.incidentplatform.service.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +36,7 @@ public class IncidentService {
     private final ServiceRepository serviceRepository;
     private final IncidentMapper mapper;
     private final AuthUtils authUtils;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public IncidentResponse createIncident(CreateIncidentRequest request) {
@@ -50,6 +57,7 @@ public class IncidentService {
         }
 
         Incident saved = incidentRepository.save(incident);
+        eventPublisher.publishEvent(new IncidentCreatedEvent(saved, currentUser));
         return mapper.toResponse(saved);
     }
 
@@ -84,6 +92,7 @@ public class IncidentService {
         }
 
         Incident saved = incidentRepository.save(incident);
+        eventPublisher.publishEvent(new IncidentUpdatedEvent(saved, authUtils.getCurrentUser(), saved.getTitle()));
         return mapper.toResponse(saved);
     }
 
@@ -100,23 +109,28 @@ public class IncidentService {
         recordTransitionTimestamp(incident, targetStatus);
 
         Incident saved = incidentRepository.save(incident);
+        eventPublisher.publishEvent(new IncidentStatusChangedEvent(saved, currentStatus, targetStatus, authUtils.getCurrentUser()));
         return mapper.toResponse(saved);
     }
 
     @Transactional
     public IncidentResponse assignIncident(Long incidentId, Long assignedToId) {
         Incident incident = findIncidentOrThrow(incidentId);
-        User assignee = assignedToId != null ? findUserOrThrow(assignedToId) : null;
-        incident.setAssignedTo(assignee);
+        User previousAssignee = incident.getAssignedTo();
+        User newAssignee = assignedToId != null ? findUserOrThrow(assignedToId) : null;
+        incident.setAssignedTo(newAssignee);
 
         Incident saved = incidentRepository.save(incident);
+        eventPublisher.publishEvent(new IncidentAssignedEvent(saved, previousAssignee, newAssignee, authUtils.getCurrentUser()));
         return mapper.toResponse(saved);
     }
 
     @Transactional
     public void deleteIncident(Long incidentId) {
         Incident incident = findIncidentOrThrow(incidentId);
+        String title = incident.getTitle();
         incidentRepository.delete(incident);
+        eventPublisher.publishEvent(new IncidentDeletedEvent(incidentId, title, authUtils.getCurrentUser()));
     }
 
     private void recordTransitionTimestamp(Incident incident, IncidentStatus targetStatus) {

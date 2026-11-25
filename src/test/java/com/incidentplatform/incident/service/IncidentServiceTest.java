@@ -12,6 +12,9 @@ import com.incidentplatform.incident.dto.response.IncidentResponse;
 import com.incidentplatform.incident.entity.Incident;
 import com.incidentplatform.incident.entity.IncidentSeverity;
 import com.incidentplatform.incident.entity.IncidentStatus;
+import com.incidentplatform.incident.event.IncidentAssignedEvent;
+import com.incidentplatform.incident.event.IncidentCreatedEvent;
+import com.incidentplatform.incident.event.IncidentStatusChangedEvent;
 import com.incidentplatform.incident.mapper.IncidentMapper;
 import com.incidentplatform.incident.repository.IncidentRepository;
 import com.incidentplatform.service.repository.ServiceRepository;
@@ -19,7 +22,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +36,7 @@ class IncidentServiceTest {
     private Map<Long, Incident> incidentStore;
     private Map<Long, User> userStore;
     private AtomicLong idSeq;
+    private List<Object> publishedEvents;
     private IncidentService incidentService;
     private User currentUser;
 
@@ -39,6 +45,7 @@ class IncidentServiceTest {
         incidentStore = new HashMap<>();
         userStore = new HashMap<>();
         idSeq = new AtomicLong(1L);
+        publishedEvents = new ArrayList<>();
 
         currentUser = new User();
         currentUser.setId(1L);
@@ -97,12 +104,13 @@ class IncidentServiceTest {
                 userRepository,
                 serviceRepository,
                 new IncidentMapper(),
-                authUtils
+                authUtils,
+                publishedEvents::add
         );
     }
 
     @Test
-    void createIncidentSetsCreatedByAndOpenStatus() {
+    void createIncidentSetsCreatedByOpenStatusAndPublishesEvent() {
         CreateIncidentRequest req = new CreateIncidentRequest(
                 "DB Outage", "Primary DB unreachable", IncidentSeverity.CRITICAL, null, null
         );
@@ -114,10 +122,12 @@ class IncidentServiceTest {
         assertEquals(IncidentStatus.OPEN, response.status());
         assertEquals(IncidentSeverity.CRITICAL, response.severity());
         assertEquals("alice", response.createdBy().username());
+        assertEquals(1, publishedEvents.size());
+        assertInstanceOf(IncidentCreatedEvent.class, publishedEvents.get(0));
     }
 
     @Test
-    void transitionStatusValidUpdatesStatusAndTimestamp() {
+    void transitionStatusValidUpdatesStatusTimestampAndPublishesEvent() {
         Incident incident = new Incident();
         incident.setId(1L);
         incident.setTitle("Test");
@@ -130,6 +140,10 @@ class IncidentServiceTest {
 
         assertEquals(IncidentStatus.ACKNOWLEDGED, response.status());
         assertNotNull(response.acknowledgedAt());
+        assertEquals(1, publishedEvents.size());
+        IncidentStatusChangedEvent event = assertInstanceOf(IncidentStatusChangedEvent.class, publishedEvents.get(0));
+        assertEquals(IncidentStatus.OPEN, event.oldStatus());
+        assertEquals(IncidentStatus.ACKNOWLEDGED, event.newStatus());
     }
 
     @Test
@@ -142,6 +156,7 @@ class IncidentServiceTest {
         assertThrows(InvalidTransitionException.class,
                 () -> incidentService.transitionStatus(1L, IncidentStatus.RESOLVED));
         assertEquals(IncidentStatus.OPEN, incidentStore.get(1L).getStatus());
+        assertTrue(publishedEvents.isEmpty());
     }
 
     @Test
@@ -170,7 +185,7 @@ class IncidentServiceTest {
     }
 
     @Test
-    void assignIncidentSetsAssignee() {
+    void assignIncidentSetsAssigneeAndPublishesEvent() {
         User assignee = new User();
         assignee.setId(2L);
         assignee.setUsername("bob");
@@ -188,5 +203,7 @@ class IncidentServiceTest {
 
         assertNotNull(response.assignedTo());
         assertEquals("bob", response.assignedTo().username());
+        assertEquals(1, publishedEvents.size());
+        assertInstanceOf(IncidentAssignedEvent.class, publishedEvents.get(0));
     }
 }
