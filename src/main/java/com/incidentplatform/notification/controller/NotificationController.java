@@ -1,13 +1,15 @@
 package com.incidentplatform.notification.controller;
 
 import com.incidentplatform.common.dto.MessageResponse;
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.notification.dto.NotificationResponse;
 import com.incidentplatform.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,9 +20,10 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<List<NotificationResponse>> getMyNotifications(
-            @RequestParam(defaultValue = "false") boolean unreadOnly) {
-        return ResponseEntity.ok(notificationService.getMyNotifications(unreadOnly));
+    public ResponseEntity<PageResponse<NotificationResponse>> getMyNotifications(
+            @RequestParam(defaultValue = "false") boolean unreadOnly,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(notificationService.getMyNotifications(unreadOnly, pageable));
     }
 
     @GetMapping("/unread-count")

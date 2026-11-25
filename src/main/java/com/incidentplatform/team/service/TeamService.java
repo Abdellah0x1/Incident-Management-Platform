@@ -2,6 +2,7 @@ package com.incidentplatform.team.service;
 
 import com.incidentplatform.common.Exception.ApiException;
 import com.incidentplatform.common.Exception.ResourceNotFoundException;
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.identity.entity.User;
 import com.incidentplatform.identity.repository.UserRepository;
 import com.incidentplatform.team.dto.request.CreateTeamRequest;
@@ -12,11 +13,11 @@ import com.incidentplatform.team.entity.Team;
 import com.incidentplatform.team.mapper.TeamMapper;
 import com.incidentplatform.team.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -46,10 +47,8 @@ public class TeamService {
     }
 
     @Transactional(readOnly = true)
-    public List<TeamSummaryResponse> getAllTeams() {
-        return teamRepository.findAll().stream()
-                .map(mapper::toSummary)
-                .toList();
+    public PageResponse<TeamSummaryResponse> getAllTeams(Pageable pageable) {
+        return PageResponse.from(teamRepository.findAll(pageable).map(mapper::toSummary));
     }
 
     @Transactional

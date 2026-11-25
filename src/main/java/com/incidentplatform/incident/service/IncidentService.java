@@ -2,6 +2,7 @@ package com.incidentplatform.incident.service;
 
 import com.incidentplatform.common.Exception.InvalidTransitionException;
 import com.incidentplatform.common.Exception.ResourceNotFoundException;
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.common.utils.AuthUtils;
 import com.incidentplatform.identity.entity.User;
 import com.incidentplatform.identity.repository.UserRepository;
@@ -10,6 +11,7 @@ import com.incidentplatform.incident.dto.request.UpdateIncidentRequest;
 import com.incidentplatform.incident.dto.response.IncidentResponse;
 import com.incidentplatform.incident.dto.response.IncidentSummaryResponse;
 import com.incidentplatform.incident.entity.Incident;
+import com.incidentplatform.incident.entity.IncidentSeverity;
 import com.incidentplatform.incident.entity.IncidentStatus;
 import com.incidentplatform.incident.event.IncidentAssignedEvent;
 import com.incidentplatform.incident.event.IncidentCreatedEvent;
@@ -18,14 +20,17 @@ import com.incidentplatform.incident.event.IncidentStatusChangedEvent;
 import com.incidentplatform.incident.event.IncidentUpdatedEvent;
 import com.incidentplatform.incident.mapper.IncidentMapper;
 import com.incidentplatform.incident.repository.IncidentRepository;
+import com.incidentplatform.incident.spec.IncidentSpecifications;
 import com.incidentplatform.service.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -68,10 +73,25 @@ public class IncidentService {
     }
 
     @Transactional(readOnly = true)
-    public List<IncidentSummaryResponse> getAllIncidents() {
-        return incidentRepository.findAll().stream()
-                .map(mapper::toSummary)
-                .toList();
+    public PageResponse<IncidentSummaryResponse> searchIncidents(
+            IncidentStatus status,
+            IncidentSeverity severity,
+            Long assignedToId,
+            Long serviceId,
+            LocalDateTime from,
+            LocalDateTime to,
+            String keyword,
+            Pageable pageable) {
+        Specification<Incident> spec = Specification.allOf(
+                IncidentSpecifications.hasStatus(status),
+                IncidentSpecifications.hasSeverity(severity),
+                IncidentSpecifications.assignedTo(assignedToId),
+                IncidentSpecifications.forService(serviceId),
+                IncidentSpecifications.createdBetween(from, to),
+                IncidentSpecifications.searchKeyword(keyword)
+        );
+        Page<IncidentSummaryResponse> page = incidentRepository.findAll(spec, pageable).map(mapper::toSummary);
+        return PageResponse.from(page);
     }
 
     @Transactional

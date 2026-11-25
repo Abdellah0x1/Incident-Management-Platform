@@ -2,6 +2,7 @@ package com.incidentplatform.incident.service;
 
 import com.incidentplatform.common.Exception.InvalidTransitionException;
 import com.incidentplatform.common.Exception.ResourceNotFoundException;
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.common.utils.AuthUtils;
 import com.incidentplatform.identity.entity.ROLE;
 import com.incidentplatform.identity.entity.User;
@@ -9,6 +10,7 @@ import com.incidentplatform.identity.repository.UserRepository;
 import com.incidentplatform.incident.dto.request.CreateIncidentRequest;
 import com.incidentplatform.incident.dto.request.UpdateIncidentRequest;
 import com.incidentplatform.incident.dto.response.IncidentResponse;
+import com.incidentplatform.incident.dto.response.IncidentSummaryResponse;
 import com.incidentplatform.incident.entity.Incident;
 import com.incidentplatform.incident.entity.IncidentSeverity;
 import com.incidentplatform.incident.entity.IncidentStatus;
@@ -20,6 +22,10 @@ import com.incidentplatform.incident.repository.IncidentRepository;
 import com.incidentplatform.service.repository.ServiceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -67,7 +73,13 @@ class IncidentServiceTest {
                         yield inc;
                     }
                     case "findById" -> Optional.ofNullable(incidentStore.get(args[0]));
-                    case "findAll" -> incidentStore.values().stream().toList();
+                    case "findAll" -> {
+                        if (args != null && args.length == 2 && args[0] instanceof Specification<?> && args[1] instanceof Pageable pageable) {
+                            List<Incident> all = incidentStore.values().stream().toList();
+                            yield new PageImpl<>(all, pageable, all.size());
+                        }
+                        yield incidentStore.values().stream().toList();
+                    }
                     case "delete" -> {
                         Incident inc = (Incident) args[0];
                         incidentStore.remove(inc.getId());
@@ -205,5 +217,24 @@ class IncidentServiceTest {
         assertEquals("bob", response.assignedTo().username());
         assertEquals(1, publishedEvents.size());
         assertInstanceOf(IncidentAssignedEvent.class, publishedEvents.get(0));
+    }
+
+    @Test
+    void searchIncidentsReturnsPagedResults() {
+        Incident incident = new Incident();
+        incident.setId(1L);
+        incident.setTitle("DB Latency");
+        incident.setSeverity(IncidentSeverity.HIGH);
+        incident.setStatus(IncidentStatus.OPEN);
+        incident.setCreatedBy(currentUser);
+        incidentStore.put(1L, incident);
+
+        PageResponse<IncidentSummaryResponse> page = incidentService.searchIncidents(
+                IncidentStatus.OPEN, IncidentSeverity.HIGH, null, null, null, null, "db", PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, page.totalElements());
+        assertEquals("DB Latency", page.content().get(0).title());
+        assertTrue(page.last());
     }
 }
