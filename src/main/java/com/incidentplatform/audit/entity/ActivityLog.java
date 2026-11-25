@@ -32,7 +32,7 @@ public class ActivityLog {
     private String action;
 
     @Column(nullable = false)
-    private String entityType;
+    private String entityType;  
 
     @Column(nullable = false)
     private Long entityId;

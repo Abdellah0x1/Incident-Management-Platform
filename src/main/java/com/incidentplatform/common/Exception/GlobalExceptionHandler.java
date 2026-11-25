@@ -76,6 +76,11 @@ public class GlobalExceptionHandler {
         return errorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidTransitionException.class)
+    public ResponseEntity<?> handleInvalidTransitionException(InvalidTransitionException ex){
+        return errorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex){
         return errorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
