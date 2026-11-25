@@ -2,6 +2,7 @@ package com.incidentplatform.service.service;
 
 import com.incidentplatform.common.Exception.ApiException;
 import com.incidentplatform.common.Exception.ResourceNotFoundException;
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.service.dto.request.CreateServiceRequest;
 import com.incidentplatform.service.dto.request.UpdateServiceRequest;
 import com.incidentplatform.service.dto.response.ServiceResponse;
@@ -9,10 +10,9 @@ import com.incidentplatform.service.entity.ServiceStatus;
 import com.incidentplatform.service.mapper.ServiceMapper;
 import com.incidentplatform.service.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +41,8 @@ public class ServiceService {
     }
 
     @Transactional(readOnly = true)
-    public List<ServiceResponse> getAllServices() {
-        return serviceRepository.findAll().stream()
-                .map(mapper::toResponse)
-                .toList();
+    public PageResponse<ServiceResponse> getAllServices(Pageable pageable) {
+        return PageResponse.from(serviceRepository.findAll(pageable).map(mapper::toResponse));
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package com.incidentplatform.service.controller;
 
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.service.dto.request.CreateServiceRequest;
 import com.incidentplatform.service.dto.request.UpdateServiceRequest;
 import com.incidentplatform.service.dto.request.UpdateServiceStatusRequest;
@@ -7,11 +8,11 @@ import com.incidentplatform.service.dto.response.ServiceResponse;
 import com.incidentplatform.service.service.ServiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/services")
@@ -26,8 +27,9 @@ public class ServiceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ServiceResponse>> getAllServices() {
-        return ResponseEntity.ok(serviceService.getAllServices());
+    public ResponseEntity<PageResponse<ServiceResponse>> getAllServices(
+            @PageableDefault(size = 20, sort = "title") Pageable pageable) {
+        return ResponseEntity.ok(serviceService.getAllServices(pageable));
     }
 
     @GetMapping("/{id}")

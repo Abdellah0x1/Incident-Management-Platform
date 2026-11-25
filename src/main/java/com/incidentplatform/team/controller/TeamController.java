@@ -1,5 +1,6 @@
 package com.incidentplatform.team.controller;
 
+import com.incidentplatform.common.dto.PageResponse;
 import com.incidentplatform.team.dto.request.CreateTeamRequest;
 import com.incidentplatform.team.dto.request.UpdateTeamRequest;
 import com.incidentplatform.team.dto.response.TeamResponse;
@@ -7,11 +8,11 @@ import com.incidentplatform.team.dto.response.TeamSummaryResponse;
 import com.incidentplatform.team.service.TeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -26,8 +27,9 @@ public class TeamController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TeamSummaryResponse>> getAllTeams() {
-        return ResponseEntity.ok(teamService.getAllTeams());
+    public ResponseEntity<PageResponse<TeamSummaryResponse>> getAllTeams(
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        return ResponseEntity.ok(teamService.getAllTeams(pageable));
     }
 
     @GetMapping("/{id}")
